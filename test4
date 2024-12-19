@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Visualizer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-financial"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        canvas {
+            margin-top: 20px;
+        }
+        #trendMatch {
+            color: rgba(0, 0, 0, 0.7);
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bitcoin Trend Visualizer</h1>
+        <p>Compare Bitcoin's live price to historical trendlines and analyze possible outcomes.</p>
+
+        <div>
+            <canvas id="livePriceChart"></canvas>
+        </div>
+        <p id="trendMatch">Trend Match: None yet.</p>
+    </div>
+
+    <script>
+        // Load the Bitcoin live price data
+        const loadLivePriceData = async () => {
+            const response = await fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=minute");
+            const data = await response.json();
+
+            const labels = data.prices.map(price => new Date(price[0]).toLocaleTimeString());
+            const prices = data.prices.map(price => price[1]);
+
+            return { labels, prices };
+        };
+
+        // Chart setup
+        const ctx = document.getElementById('livePriceChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line', // Change to 'candlestick' or 'bar' for other chart types
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Bitcoin Price (USD)',
+                    data: [],
+                    borderColor: 'green',
+                    backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Price (USD)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update the chart every second
+        const updateLivePriceChart = async () => {
+            const { labels, prices } = await loadLivePriceData();
+
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = prices;
+
+            // Update color based on price trend
+            const lastPrice = prices[prices.length - 1];
+            const secondLastPrice = prices[prices.length - 2];
+
+            if (lastPrice > secondLastPrice) {
+                chart.data.datasets[0].borderColor = 'green';
+                chart.data.datasets[0].backgroundColor = 'rgba(0, 255, 0, 0.1)';
+            } else {
+                chart.data.datasets[0].borderColor = 'red';
+                chart.data.datasets[0].backgroundColor = 'rgba(255, 0, 0, 0.1)';
+            }
+
+            chart.update();
+        };
+
+        setInterval(updateLivePriceChart, 1000);
+
+        // Historical trend matcher (mock logic for demo purposes)
+        const trendMatcher = () => {
+            const randomMatch = Math.random() > 0.5 ? "Match found!" : "No significant match.";
+            document.getElementById('trendMatch').innerText = `Trend Match: ${randomMatch}`;
+        };
+
+        setInterval(trendMatcher, 5000);
+    </script>
+</body>
+</html>
